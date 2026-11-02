@@ -1,0 +1,542 @@
+// OA-GIMS — OPEC Aurum Gems Integrated Management System
+// Prisma schema (PostgreSQL). Core structure per implementation spec §31–§36.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────── Enums ───────────────────────────
+
+enum UserRole {
+  SUPER_ADMIN
+  OPEC_PRESIDENT
+  TREASURER
+  AUDITOR
+  PAYROLL_MASTER
+  OPEC_ADVISER
+  REGIONAL_MANAGER
+  AREA_MANAGER
+  OPEC_OFFICER
+  LOAN_OFFICER
+  FINANCE_OFFICER
+  PROJECT_COORDINATOR
+  DOCUMENTATION_OFFICER
+  MEMBER
+  VIEWER
+}
+
+enum EmploymentStatus {
+  PERMANENT
+  PROBATIONARY
+  RESIGNED
+  RETIRED
+  TERMINATED
+  INACTIVE
+}
+
+enum LoanStatus {
+  DRAFT
+  SUBMITTED
+  FOR_REVIEW
+  FOR_APPROVAL
+  APPROVED
+  REJECTED
+  FOR_RELEASE
+  RELEASED
+  ACTIVE
+  PARTIALLY_PAID
+  FULLY_PAID
+  CANCELLED
+  DEFAULTED
+  CLOSED
+}
+
+enum ApprovalDecision {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum PaymentStatus {
+  SCHEDULED
+  POSTED
+  PARTIAL
+  MISSED
+  WAIVED
+}
+
+enum InterestMethod {
+  FLAT_RATE
+  REDUCING_BALANCE
+  CUSTOM_OPEC_FORMULA
+}
+
+enum ReleaseMethod {
+  BANK_CHECK
+  KWARTA_PADALA
+  BPI_ATM_DEPOSIT
+  CASH
+}
+
+enum CoMakerStatus {
+  PENDING
+  CONFIRMED
+  DECLINED
+}
+
+enum ProjectStatus {
+  DRAFT
+  SUBMITTED
+  REVIEW
+  APPROVED
+  ONGOING
+  COMPLETED
+  ACCOMPLISHMENT
+  CLOSED
+}
+
+enum BeneficiaryType {
+  INDIVIDUAL
+  FAMILY
+  BARANGAY
+  SCHOOL
+  LGU
+  GOVERNMENT_AGENCY
+  COMMUNITY
+  ORGANIZATION
+}
+
+enum DonationType {
+  CASH
+  FOOD
+  CLOTHING
+  EQUIPMENT
+  SUPPLIES
+  SERVICES
+  OTHER
+}
+
+// ──────────────────────── Organization ────────────────────────
+
+model Region {
+  id    String @id @default(cuid())
+  name  String
+  code  String @unique
+  areas Area[]
+}
+
+model Area {
+  id       String   @id @default(cuid())
+  name     String
+  code     String   @unique
+  regionId String
+  region   Region   @relation(fields: [regionId], references: [id])
+  branches Branch[]
+}
+
+model Branch {
+  id        String     @id @default(cuid())
+  name      String
+  code      String     @unique
+  areaId    String
+  area      Area       @relation(fields: [areaId], references: [id])
+  employees Employee[]
+}
+
+model Position {
+  id            String     @id @default(cuid())
+  title         String
+  isOpecOfficer Boolean    @default(false)
+  employees     Employee[]
+}
+
+model Employee {
+  id               String           @id @default(cuid())
+  employeeNumber   String           @unique
+  firstName        String
+  middleName       String?
+  lastName         String
+  suffix           String?
+  birthDate        DateTime?
+  contactNumber    String?
+  email            String?
+  address          String?
+  dateHired        DateTime
+  employmentStatus EmploymentStatus @default(PROBATIONARY)
+  photoUrl         String?
+
+  positionId String?
+  position   Position? @relation(fields: [positionId], references: [id])
+
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id])
+
+  user User?
+
+  loanApplications LoanApplication[] @relation("Applicant")
+  coMakerOn        LoanApplicationCoMaker[]
+  memberships      Membership[]
+  projectMembers   ProjectMember[]
+  attendances      Attendance[]
+  approvals        LoanApproval[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Membership {
+  id           String   @id @default(cuid())
+  employeeId   String
+  employee     Employee @relation(fields: [employeeId], references: [id])
+  opecPosition String?
+  dateJoined   DateTime
+  status       String   @default("ACTIVE") // ACTIVE / SUSPENDED / ENDED
+}
+
+// ─────────────────────────── Auth ───────────────────────────
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  role         UserRole  @default(MEMBER)
+  active       Boolean   @default(true)
+  employeeId   String?   @unique
+  employee     Employee? @relation(fields: [employeeId], references: [id])
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+// ─────────────────────────── Loans ───────────────────────────
+
+model LoanProduct {
+  id               String         @id @default(cuid())
+  code             String         @unique
+  name             String
+  description      String?
+  minAmount        Decimal        @db.Decimal(12, 2)
+  maxAmount        Decimal        @db.Decimal(12, 2)
+  maxTermMonths    Int
+  interestRate     Decimal        @db.Decimal(5, 2)
+  interestMethod   InterestMethod @default(CUSTOM_OPEC_FORMULA)
+  processingFee    Decimal        @db.Decimal(12, 2) @default(0)
+  requiredCoMakers Int            @default(0)
+  minYearsService  Int            @default(0)
+  active           Boolean        @default(true)
+
+  applications     LoanApplication[]
+  eligibilityRules LoanEligibilityRule[]
+}
+
+model LoanEligibilityRule {
+  id               String      @id @default(cuid())
+  productId        String
+  product          LoanProduct @relation(fields: [productId], references: [id])
+  minYearsService  Int
+  maxAmount        Decimal     @db.Decimal(12, 2)
+  maxTermMonths    Int
+  requiredCoMakers Int
+  priority         Int         @default(0)
+}
+
+model LoanApplication {
+  id              String        @id @default(cuid())
+  applicationNo   String        @unique
+  employeeId      String
+  employee        Employee      @relation("Applicant", fields: [employeeId], references: [id])
+  loanProductId   String
+  loanProduct     LoanProduct   @relation(fields: [loanProductId], references: [id])
+
+  purpose         String?
+  requestedAmount Decimal       @db.Decimal(12, 2)
+  approvedAmount  Decimal?      @db.Decimal(12, 2)
+  termMonths      Int?
+  releaseMethod   ReleaseMethod @default(BANK_CHECK)
+
+  status          LoanStatus    @default(DRAFT)
+  rejectionReason String?
+
+  submittedAt DateTime?
+  approvedAt  DateTime?
+  rejectedAt  DateTime?
+
+  coMakers  LoanApplicationCoMaker[]
+  approvals LoanApproval[]
+  documents LoanDocument[]
+  account   LoanAccount?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model LoanApplicationCoMaker {
+  id            String        @id @default(cuid())
+  applicationId String
+  employeeId    String
+  sequence      Int           @default(1)
+  status        CoMakerStatus @default(PENDING)
+
+  application LoanApplication @relation(fields: [applicationId], references: [id])
+  employee    Employee        @relation(fields: [employeeId], references: [id])
+
+  @@unique([applicationId, employeeId])
+}
+
+model LoanApproval {
+  id            String           @id @default(cuid())
+  applicationId String
+  approverId    String
+  role          UserRole
+  decision      ApprovalDecision @default(PENDING)
+  comments      String?
+  approvedAt    DateTime?
+  rejectedAt    DateTime?
+
+  application LoanApplication @relation(fields: [applicationId], references: [id])
+  approver    Employee        @relation(fields: [approverId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([applicationId, role])
+}
+
+model LoanDocument {
+  id           String   @id @default(cuid())
+  applicationId String
+  type         String // payslip / application / co-maker / approval / receipt …
+  fileName     String
+  storagePath  String   // never publicly exposed; served via authenticated download
+  uploadedById String?
+  uploadedAt   DateTime @default(now())
+
+  application LoanApplication @relation(fields: [applicationId], references: [id])
+}
+
+model LoanAccount {
+  id             String     @id @default(cuid())
+  loanNumber     String     @unique
+  applicationId  String     @unique
+  application    LoanApplication @relation(fields: [applicationId], references: [id])
+
+  principal      Decimal @db.Decimal(12, 2)
+  interestTotal  Decimal @db.Decimal(12, 2)
+  processingFee  Decimal @db.Decimal(12, 2)
+  totalPayable   Decimal @db.Decimal(12, 2)
+  balance        Decimal @db.Decimal(12, 2)
+  amountReleased Decimal @db.Decimal(12, 2)
+
+  startDate    DateTime?
+  releaseDate  DateTime?
+  maturityDate DateTime?
+
+  status LoanStatus @default(ACTIVE)
+
+  schedules  LoanAmortization[]
+  payments   LoanPayment[]
+  releases   LoanRelease[]
+  deductions PayrollDeduction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model LoanAmortization {
+  id            String        @id @default(cuid())
+  loanId        String
+  installmentNo Int
+  dueDate       DateTime
+  principal     Decimal       @db.Decimal(12, 2)
+  interest      Decimal       @db.Decimal(12, 2)
+  fees          Decimal       @db.Decimal(12, 2) @default(0)
+  amount        Decimal       @db.Decimal(12, 2)
+  balanceAfter  Decimal       @db.Decimal(12, 2)
+  status        PaymentStatus @default(SCHEDULED)
+
+  loan LoanAccount @relation(fields: [loanId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([loanId, installmentNo])
+}
+
+model LoanPayment {
+  id        String        @id @default(cuid())
+  loanId    String
+  paymentNo String        @unique
+  amount    Decimal       @db.Decimal(12, 2)
+  appliedTo Json? // [{amortizationId, principal, interest}]
+  method    ReleaseMethod @default(CASH)
+  reference String?
+  paidAt    DateTime      @default(now())
+  receivedBy String?
+
+  loan LoanAccount @relation(fields: [loanId], references: [id])
+}
+
+model LoanRelease {
+  id              String        @id @default(cuid())
+  loanId          String
+  grossAmount     Decimal       @db.Decimal(12, 2)
+  processingFee   Decimal       @db.Decimal(12, 2)
+  transferFee     Decimal       @db.Decimal(12, 2) @default(0)
+  netAmount       Decimal       @db.Decimal(12, 2)
+  method          ReleaseMethod
+  referenceNumber String?
+  releasedById    String?
+  releasedAt      DateTime      @default(now())
+
+  loan LoanAccount @relation(fields: [loanId], references: [id])
+}
+
+model PayrollDeduction {
+  id              String        @id @default(cuid())
+  loanId          String
+  payrollPeriod   String // e.g. "2026-10-A" (1st half) / "2026-10-B"
+  scheduledAmount Decimal       @db.Decimal(12, 2)
+  deductedAmount  Decimal       @db.Decimal(12, 2) @default(0)
+  difference      Decimal       @db.Decimal(12, 2) @default(0)
+  status          PaymentStatus @default(SCHEDULED)
+  payrollReference String?
+  postedAt        DateTime?
+
+  loan LoanAccount @relation(fields: [loanId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([loanId, payrollPeriod])
+}
+
+// ───────────────────────── Community/CSR ─────────────────────────
+
+model Project {
+  id            String        @id @default(cuid())
+  projectNumber String        @unique
+  name          String
+  category      String?
+  description   String?
+  objective     String?
+  location      String?
+  startDate     DateTime?
+  endDate       DateTime?
+  budget        Decimal       @db.Decimal(12, 2) @default(0)
+  status        ProjectStatus @default(DRAFT)
+  leaderId      String?
+
+  members       ProjectMember[]
+  events        Event[]
+  beneficiaries Beneficiary[]
+  donations     Donation[]
+  expenses      Expense[]
+}
+
+model ProjectMember {
+  id         String   @id @default(cuid())
+  projectId  String
+  employeeId String
+  role       String   @default("VOLUNTEER")
+
+  project  Project  @relation(fields: [projectId], references: [id])
+  employee Employee @relation(fields: [employeeId], references: [id])
+
+  @@unique([projectId, employeeId])
+}
+
+model Beneficiary {
+  id             String          @id @default(cuid())
+  projectId      String
+  name           String
+  type           BeneficiaryType
+  barangay       String?
+  municipality   String?
+  province       String?
+  contact        String?
+  estimatedCount Int             @default(0)
+  actualCount    Int             @default(0)
+  description    String?
+
+  project Project @relation(fields: [projectId], references: [id])
+}
+
+model Event {
+  id                   String   @id @default(cuid())
+  projectId            String
+  name                 String
+  date                 DateTime
+  location             String?
+  coordinatorId        String?
+  expectedParticipants Int      @default(0)
+  actualParticipants   Int      @default(0)
+
+  project     Project      @relation(fields: [projectId], references: [id])
+  attendances Attendance[]
+}
+
+model Attendance {
+  id         String    @id @default(cuid())
+  eventId    String
+  employeeId String
+  timeIn     DateTime?
+  timeOut    DateTime?
+  status     String    @default("PRESENT") // PRESENT / ABSENT / LATE / QR
+
+  event    Event    @relation(fields: [eventId], references: [id])
+  employee Employee @relation(fields: [employeeId], references: [id])
+
+  @@unique([eventId, employeeId])
+}
+
+model Donation {
+  id           String       @id @default(cuid())
+  donationNo   String       @unique
+  projectId    String
+  donor        String
+  type         DonationType
+  quantity     String?
+  value        Decimal      @db.Decimal(12, 2) @default(0)
+  date         DateTime     @default(now())
+  receivedById String?
+  remarks      String?
+
+  project Project @relation(fields: [projectId], references: [id])
+}
+
+model Expense {
+  id           String   @id @default(cuid())
+  projectId    String
+  category     String // Food / Transportation / Supplies / Equipment / Venue / Printing / Logistics / Other
+  amount       Decimal  @db.Decimal(12, 2)
+  date         DateTime @default(now())
+  payee        String?
+  receiptUrl   String?
+  approvedById String?
+
+  project Project @relation(fields: [projectId], references: [id])
+}
+
+// ───────────────────────── Administration ─────────────────────────
+
+model AuditLog {
+  id       String   @id @default(cuid())
+  userId   String?
+  action   String // LOGIN / CREATE_LOAN / APPROVE_LOAN / RELEASE_LOAN / POST_PAYMENT …
+  entity   String?
+  entityId String?
+  changes  Json?
+  ip       String?
+  at       DateTime @default(now())
+}
+
+model Notification {
+  id      String   @id @default(cuid())
+  userId  String
+  title   String
+  body    String
+  channel String   @default("IN_APP") // IN_APP / EMAIL / SMS
+  read    Boolean  @default(false)
+  at      DateTime @default(now())
+}
