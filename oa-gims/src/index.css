@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: dark; }
+
+html, body { background: #07070d; }
+
+.font-display { font-family: 'Clash Display', Georgia, serif; letter-spacing: -0.01em; }
+
+/* ── Gold text shimmer for hero headline ─────────────────────── */
+.gold-text {
+  background: linear-gradient(100deg, #f5d78a 20%, #e6b64c 40%, #fffbea 55%, #c98a1b 75%);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: goldSlide 6s ease-in-out infinite;
+}
+@keyframes goldSlide { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+
+/* ── Glass panels ────────────────────────────────────────────── */
+.glass {
+  background: linear-gradient(160deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+  border: 1px solid rgba(245, 215, 138, 0.14);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.glass-strong {
+  background: linear-gradient(160deg, rgba(18,18,31,0.92), rgba(12,12,22,0.88));
+  border: 1px solid rgba(245, 215, 138, 0.18);
+  backdrop-filter: blur(18px);
+}
+
+.card-hover { transition: transform .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s, border-color .35s; }
+.card-hover:hover { transform: translateY(-6px); box-shadow: 0 0 45px -12px rgba(230,182,76,.4); border-color: rgba(245,215,138,.4); }
+
+/* ── Floating label inputs (spec requirement) ───────────────── */
+.float-field { position: relative; }
+.float-field > input, .float-field > select, .float-field > textarea {
+  width: 100%; padding: 1.35rem 1rem 0.55rem; border-radius: 0.9rem;
+  background: rgba(255,255,255,0.04); color: #fff;
+  border: 1px solid rgba(245,215,138,0.16); outline: none;
+  transition: border-color .25s, box-shadow .25s, background .25s;
+}
+.float-field > input:focus, .float-field > select:focus, .float-field > textarea:focus {
+  border-color: #e6b64c; box-shadow: 0 0 0 3px rgba(230,182,76,0.18); background: rgba(255,255,255,0.06);
+}
+.float-field > label {
+  position: absolute; left: 1rem; top: 0.95rem; color: rgba(255,255,255,0.45);
+  pointer-events: none; transition: all .22s cubic-bezier(.2,.8,.2,1); font-size: .95rem;
+}
+.float-field > input:focus + label,
+.float-field > input:not(:placeholder-shown) + label,
+.float-field > textarea:focus + label,
+.float-field > textarea:not(:placeholder-shown) + label,
+.float-field > select:focus + label,
+.float-field--filled > label {
+  top: 0.35rem; font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: #f5d78a;
+}
+.float-field > select { appearance: none; }
+.float-field > select option { background: #12121f; color: #fff; }
+
+/* ── Scrollbar ───────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: #0c0c16; }
+::-webkit-scrollbar-thumb { background: linear-gradient(#e6b64c, #8a6a1f); border-radius: 8px; }
+
+/* ── Toast progress bar ──────────────────────────────────────── */
+.toast-progress { animation: toastBar linear forwards; }
+@keyframes toastBar { from { width: 100%; } to { width: 0%; } }
+
+/* ── Reveal-on-scroll helper ─────────────────────────────────── */
+.reveal-hidden { opacity: 0; transform: translateY(28px); }
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
