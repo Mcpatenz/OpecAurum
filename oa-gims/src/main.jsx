@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
+import RoleDashboard from './pages/RoleDashboard';
 import Shell from './components/Shell';
 import { AuthProvider, useAuth } from './lib/auth/AuthContext';
 import { ToastProvider } from './components/ui/Toast';
@@ -48,7 +49,18 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route element={<ProtectedRoute />}>
             <Route element={<Shell />}>
-              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/dashboard" element={<RoleDashboard />} />
+              <Route path="/loans/apply" element={<RoleDashboard />} />
+              <Route path="/loans/applications" element={<RoleDashboard />} />
+              <Route path="/approvals" element={<RoleDashboard />} />
+              <Route path="/releases" element={<RoleDashboard />} />
+              <Route path="/payroll" element={<RoleDashboard />} />
+              <Route path="/products" element={<RoleDashboard />} />
+              <Route path="/loans/active" element={<RoleDashboard />} />
+              <Route path="/members" element={<RoleDashboard />} />
+              <Route path="/projects" element={<RoleDashboard />} />
+              <Route path="/reports" element={<RoleDashboard />} />
+              <Route path="/audit" element={<RoleDashboard />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Route>
           </Route>
