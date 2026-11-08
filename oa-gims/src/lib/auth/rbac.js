@@ -1,21 +1,18 @@
 // OA-GIMS — Server-side RBAC (spec §3–§4, §50). Never trust client-supplied roles.
 
 export const ROLES = [
-  'SUPER_ADMIN', 'OPEC_PRESIDENT', 'TREASURER', 'AUDITOR', 'PAYROLL_MASTER', 'OPEC_ADVISER',
-  'REGIONAL_MANAGER', 'AREA_MANAGER', 'OPEC_OFFICER', 'LOAN_OFFICER', 'FINANCE_OFFICER',
-  'PROJECT_COORDINATOR', 'DOCUMENTATION_OFFICER', 'MEMBER', 'VIEWER',
+  'SUPER_ADMIN', 'OPEC_PRESIDENT', 'OPEC_SECRETARY', 'OPEC_TREASURER', 'OPEC_AUDITOR',
+  'MEMBER', 'REGIONAL_MANAGER', 'AREA_MANAGER', 'REGIONAL_AUDIT_MANAGER',
 ];
 
 export const ROLE_LABELS = {
-  SUPER_ADMIN: 'Super Admin', OPEC_PRESIDENT: 'OPEC President', TREASURER: 'Treasurer',
-  AUDITOR: 'Auditor', PAYROLL_MASTER: 'Payroll Master', OPEC_ADVISER: 'OPEC Adviser',
-  REGIONAL_MANAGER: 'Regional Manager', AREA_MANAGER: 'Area Manager', OPEC_OFFICER: 'OPEC Officer',
-  LOAN_OFFICER: 'Loan Officer', FINANCE_OFFICER: 'Finance Officer', PROJECT_COORDINATOR: 'Project Coordinator',
-  DOCUMENTATION_OFFICER: 'Documentation Officer', MEMBER: 'Member', VIEWER: 'Viewer',
+  SUPER_ADMIN: 'Super Admin', OPEC_PRESIDENT: 'OPEC President', OPEC_SECRETARY: 'OPEC Secretary',
+  OPEC_TREASURER: 'OPEC Treasurer', OPEC_AUDITOR: 'OPEC Auditor', MEMBER: 'Member',
+  REGIONAL_MANAGER: 'Regional Manager', AREA_MANAGER: 'Area Manager', REGIONAL_AUDIT_MANAGER: 'Regional Audit Manager',
 };
 
 /** Credit committee whose approval is required before a loan becomes APPROVED (spec §14). */
-export const COMMITTEE_ROLES = ['OPEC_PRESIDENT', 'TREASURER', 'AUDITOR', 'PAYROLL_MASTER', 'OPEC_ADVISER'];
+export const COMMITTEE_ROLES = ['OPEC_PRESIDENT', 'OPEC_SECRETARY', 'OPEC_TREASURER', 'OPEC_AUDITOR'];
 
 const PERMS = {
   'members:create': ['SUPER_ADMIN', 'OPEC_PRESIDENT', 'OPEC_OFFICER', 'REGIONAL_MANAGER', 'AREA_MANAGER'],
@@ -23,7 +20,7 @@ const PERMS = {
   'loans:create': ['SUPER_ADMIN', 'LOAN_OFFICER', 'MEMBER'],
   'loans:review': ['SUPER_ADMIN', 'LOAN_OFFICER', 'FINANCE_OFFICER'],
   'loans:approve': ['SUPER_ADMIN', ...COMMITTEE_ROLES],
-  'loans:release': ['SUPER_ADMIN', 'TREASURER', 'FINANCE_OFFICER', 'LOAN_OFFICER'],
+  'loans:release': ['SUPER_ADMIN', 'OPEC_TREASURER'],
   'payments:manage': ['SUPER_ADMIN', 'TREASURER', 'FINANCE_OFFICER', 'LOAN_OFFICER'],
   'payroll:manage': ['SUPER_ADMIN', 'PAYROLL_MASTER'],
   'products:manage': ['SUPER_ADMIN', 'OPEC_PRESIDENT', 'TREASURER'],
@@ -50,7 +47,7 @@ export function requireRole(session, roles) {
 export function requireLoanAccess(session, applicationEmployeeId) {
   const u = session?.user;
   if (!u) throw Object.assign(new Error('Unauthenticated'), { status: 401 });
-  const privileged = ['SUPER_ADMIN', 'LOAN_OFFICER', 'FINANCE_OFFICER', 'TREASURER', 'AUDITOR', 'OPEC_PRESIDENT', 'PAYROLL_MASTER', 'OPEC_ADVISER'];
+  const privileged = ['SUPER_ADMIN', 'OPEC_PRESIDENT', 'OPEC_SECRETARY', 'OPEC_TREASURER', 'OPEC_AUDITOR', 'REGIONAL_MANAGER', 'AREA_MANAGER', 'REGIONAL_AUDIT_MANAGER'];
   if (privileged.includes(u.role)) return u;
   if (u.employeeId === applicationEmployeeId) return u; // members see their own
   throw Object.assign(new Error('Forbidden'), { status: 403 });
