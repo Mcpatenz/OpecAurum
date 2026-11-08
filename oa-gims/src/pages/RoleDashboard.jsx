@@ -22,9 +22,8 @@ const TITLES = {
 
 const money = (n) => `₱${Number(n || 0).toLocaleString('en-PH', { maximumFractionDigits: 0 })}`;
 const canAct = (role, permission) => ({
-  SUPER_ADMIN: true, OPEC_PRESIDENT: ['approve', 'products', 'projects'].includes(permission), TREASURER: ['approve', 'release', 'products'].includes(permission),
-  AUDITOR: permission === 'audit', PAYROLL_MASTER: permission === 'approve' || permission === 'payroll', OPEC_ADVISER: permission === 'approve',
-  LOAN_OFFICER: ['review', 'release'].includes(permission), FINANCE_OFFICER: ['review', 'release'].includes(permission), PROJECT_COORDINATOR: permission === 'projects',
+  SUPER_ADMIN: true, OPEC_PRESIDENT: ['approve', 'products', 'projects'].includes(permission), OPEC_SECRETARY: ['approve', 'projects'].includes(permission), OPEC_TREASURER: ['approve', 'release', 'products'].includes(permission),
+  OPEC_AUDITOR: permission === 'audit', REGIONAL_AUDIT_MANAGER: permission === 'audit', REGIONAL_MANAGER: permission === 'review', AREA_MANAGER: permission === 'review',
 })[role] || false;
 
 function DashboardHome({ user, onAction }) {
