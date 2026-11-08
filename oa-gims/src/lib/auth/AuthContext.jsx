@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
-import { DB, findEmployee } from '../data/mockDb';
+import { DB, findEmployee } from '../../data/mockDb';
 
 /**
  * Demo auth context. In production this wraps a session cookie issued by
