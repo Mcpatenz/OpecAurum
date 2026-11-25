@@ -25,6 +25,7 @@ const DIRECTORY = [
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [profileOverrides, setProfileOverrides] = useState({});
 
   const value = useMemo(() => ({
     user,
@@ -32,13 +33,22 @@ export function AuthProvider({ children }) {
     login(email) {
       const rec = DIRECTORY.find((d) => d.email.toLowerCase() === String(email).toLowerCase());
       if (!rec) return { ok: false, error: 'Account not found. Try one of the demo accounts below.' };
-      const employee = rec.employeeId ? findEmployee(rec.employeeId) : undefined;
-      setUser({ ...rec, employee });
-      return { ok: true, user: rec };
+      const account = { ...rec, ...(profileOverrides[rec.email] || {}), originalEmail: rec.email };
+      const employee = account.employeeId ? findEmployee(account.employeeId) : undefined;
+      setUser({ ...account, employee });
+      return { ok: true, user: account };
+    },
+    updateProfile(profile) {
+      if (!user) return null;
+      const emailKey = user.originalEmail || user.email;
+      const updated = { name: profile.name.trim(), email: profile.email.trim() };
+      setProfileOverrides((current) => ({ ...current, [emailKey]: { ...current[emailKey], ...updated } }));
+      setUser((current) => current ? { ...current, ...updated } : current);
+      return updated;
     },
     logout() { setUser(null); },
     directory: DIRECTORY,
-  }), [user]);
+  }), [user, profileOverrides]);
 
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;
 }
