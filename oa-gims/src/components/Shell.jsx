@@ -7,7 +7,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../lib/auth/AuthContext';
 import { ROLE_LABELS, can } from '../lib/auth/rbac';
-import { Badge } from './ui/primitives';
+import { Button, FloatInput } from './ui/primitives';
+import { useToast } from './ui/Toast';
 
 const NAV = [
   { section: 'Overview', items: [{ to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard }] },
@@ -33,9 +34,11 @@ const NAV = [
 ];
 
 export default function Shell() {
-  const { user, logout } = useAuth();
+  const { user, logout, updateProfile } = useAuth();
   const nav = useNavigate();
+  const toast = useToast();
   const [open, setOpen] = useState(false);
+  const [profile, setProfile] = useState({ name: user.name, email: user.email });
 
   const visible = (item) => {
     if (item.memberOnly && user.role !== 'MEMBER') return false;
@@ -111,20 +114,31 @@ export default function Shell() {
               <Bell size={18} />
               <span className="absolute right-1.5 top-1.5 h-2 w-2 animate-pulseGlow rounded-full bg-aurum" />
             </button>
-            <div className="flex items-center gap-2 border-l border-line pl-2 md:pl-3">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-gold-300 to-aurum-deep text-sm font-bold text-ink" aria-hidden="true">
-                {user.name.split(' ').map((s) => s[0]).slice(0, 2).join('')}
-              </span>
-              <div className="hidden min-w-0 sm:block">
-                <p className="max-w-36 truncate text-sm font-semibold">{user.name}</p>
-                <p className="text-[10px] text-gold-200/70">{ROLE_LABELS[user.role]}</p>
-              </div>
-              <button onClick={() => { logout(); nav('/login'); }}
-                className="flex items-center gap-1.5 rounded-xl border border-red-400/30 px-2.5 py-2 text-xs font-semibold text-red-300 transition hover:bg-red-500/15 sm:ml-1"
-                aria-label="Sign out">
-                <LogOut size={14} /><span className="hidden sm:inline">Sign out</span>
-              </button>
-            </div>
+            <details className="group relative border-l border-line pl-2 md:pl-3">
+              <summary className="grid h-10 w-10 cursor-pointer list-none place-items-center rounded-full bg-gradient-to-br from-gold-300 to-aurum-deep text-sm font-bold text-ink ring-2 ring-transparent transition hover:ring-gold-200/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-200 [&::-webkit-details-marker]:hidden"
+                aria-label={`Open profile menu for ${user.name}`} title="Profile">
+                {user.employee?.photo
+                  ? <img src={user.employee.photo} alt="" className="h-full w-full rounded-full object-cover" />
+                  : user.name.split(' ').map((s) => s[0]).slice(0, 2).join('')}
+              </summary>
+              <section className="absolute right-0 top-12 z-50 w-[min(21rem,calc(100vw-2rem))] rounded-2xl border border-white/10 bg-[#17140f] p-4 shadow-2xl" aria-label="Profile menu">
+                <div className="mb-4 flex items-center gap-3 border-b border-white/10 pb-4">
+                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gradient-to-br from-gold-300 to-aurum-deep font-bold text-ink" aria-hidden="true">{user.name.split(' ').map((s) => s[0]).slice(0, 2).join('')}</span>
+                  <div className="min-w-0"><p className="truncate text-sm font-semibold">{user.name}</p><p className="truncate text-xs text-white/50">{user.email}</p><p className="mt-1 text-[10px] text-gold-200/70">{ROLE_LABELS[user.role]}</p></div>
+                </div>
+                <form onSubmit={(event) => { event.preventDefault(); const updated = updateProfile(profile); if (updated) { setProfile(updated); toast.success('Profile updated', 'Your account information has been updated for this session.'); event.currentTarget.closest('details')?.removeAttribute('open'); } }} className="space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-white/55">Update profile</p>
+                  <FloatInput label="Full name" autoComplete="name" required value={profile.name} onChange={(event) => setProfile((current) => ({ ...current, name: event.target.value }))} />
+                  <FloatInput label="Email address" type="email" autoComplete="email" required value={profile.email} onChange={(event) => setProfile((current) => ({ ...current, email: event.target.value }))} />
+                  <Button type="submit" className="w-full">Save profile</Button>
+                </form>
+                <div className="mt-4 border-t border-white/10 pt-3">
+                  <button onClick={() => { logout(); nav('/login'); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold text-red-300 transition hover:bg-red-500/10" aria-label="Sign out">
+                    <LogOut size={15} /> Sign out
+                  </button>
+                </div>
+              </section>
+            </details>
           </div>
         </header>
 
