@@ -79,22 +79,6 @@ export default function Shell() {
           );
         })}
       </nav>
-
-      <div className="border-t border-line p-4">
-        <div className="mb-3 flex items-center gap-3 rounded-xl bg-white/5 p-3">
-          <span className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-gold-300 to-aurum-deep font-bold text-ink">
-            {user.name.split(' ').map((s) => s[0]).slice(0, 2).join('')}
-          </span>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold">{user.name}</p>
-            <Badge tone="gold">{ROLE_LABELS[user.role]}</Badge>
-          </div>
-        </div>
-        <button onClick={() => { logout(); nav('/login'); }}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-400/30 py-2 text-xs font-semibold text-red-300 transition hover:bg-red-500/15">
-          <LogOut size={14} /> Sign out
-        </button>
-      </div>
     </aside>
   );
 
@@ -118,16 +102,29 @@ export default function Shell() {
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Topbar */}
         <header className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-ink/80 px-4 py-3 backdrop-blur-xl md:px-8">
-          <div className="flex items-center gap-3">
-            <button onClick={() => setOpen(true)} className="rounded-xl p-2 text-white/70 hover:bg-white/10 lg:hidden" aria-label="Open menu"><Menu size={20} /></button>
-            <h1 className="font-display text-base font-bold md:text-lg">OPEC Aurum Gems <span className="hidden text-gold-200 sm:inline">Integrated Management System</span></h1>
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <button onClick={() => setOpen(true)} className="shrink-0 rounded-xl p-2 text-white/70 hover:bg-white/10 lg:hidden" aria-label="Open menu"><Menu size={20} /></button>
+            <h1 className="truncate font-display text-sm font-bold md:text-lg">OPEC Aurum Gems <span className="hidden text-gold-200 sm:inline">Integrated Management System</span></h1>
           </div>
           <div className="flex items-center gap-2">
             <button className="relative rounded-xl p-2 text-white/60 transition hover:bg-white/10 hover:text-gold-200" aria-label="Notifications">
               <Bell size={18} />
               <span className="absolute right-1.5 top-1.5 h-2 w-2 animate-pulseGlow rounded-full bg-aurum" />
             </button>
-            <span className="hidden rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-[11px] font-semibold text-emerald-300 md:inline">● Session active</span>
+            <div className="flex items-center gap-2 border-l border-line pl-2 md:pl-3">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-gold-300 to-aurum-deep text-sm font-bold text-ink" aria-hidden="true">
+                {user.name.split(' ').map((s) => s[0]).slice(0, 2).join('')}
+              </span>
+              <div className="hidden min-w-0 sm:block">
+                <p className="max-w-36 truncate text-sm font-semibold">{user.name}</p>
+                <p className="text-[10px] text-gold-200/70">{ROLE_LABELS[user.role]}</p>
+              </div>
+              <button onClick={() => { logout(); nav('/login'); }}
+                className="flex items-center gap-1.5 rounded-xl border border-red-400/30 px-2.5 py-2 text-xs font-semibold text-red-300 transition hover:bg-red-500/15 sm:ml-1"
+                aria-label="Sign out">
+                <LogOut size={14} /><span className="hidden sm:inline">Sign out</span>
+              </button>
+            </div>
           </div>
         </header>
 
