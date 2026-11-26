@@ -41,9 +41,9 @@ function Dashboard() {
   );
 }
 
-function App() {
+function App({ initialData }) {
   return (
-    <AuthProvider>
+    <AuthProvider initialData={initialData}>
       <ToastProvider>
         <Routes>
           <Route path="/" element={<Landing />} />
@@ -73,11 +73,11 @@ function App() {
   );
 }
 
-export function Application() {
+export function Application({ initialData }) {
   return (
     <React.StrictMode>
       <BrowserRouter>
-        <App />
+        <App initialData={initialData} />
       </BrowserRouter>
     </React.StrictMode>
   );

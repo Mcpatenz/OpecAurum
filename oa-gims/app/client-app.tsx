@@ -7,6 +7,6 @@ const Application = dynamic(
   { ssr: false, loading: () => <div className="grid min-h-screen place-items-center bg-ink text-sm text-white/60">Loading OA-GIMS…</div> },
 )
 
-export default function ClientApp() {
-  return <Application />
+export default function ClientApp({ initialData }: { initialData: Awaited<ReturnType<typeof import('../src/lib/actions/core').loadCoreData>> | null }) {
+  return <Application initialData={initialData} />
 }
