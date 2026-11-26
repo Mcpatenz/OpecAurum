@@ -1,32 +1,39 @@
 import React, { useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Gem, ShieldCheck, LogIn, Sparkles, ArrowRight } from 'lucide-react';
+import { Gem, ShieldCheck, LogIn, ArrowRight } from 'lucide-react';
 import GemScene from '../components/ui/GemScene';
 import { Button, FloatInput } from '../components/ui/primitives';
 import { useToast } from '../components/ui/Toast';
 import { useAuth } from '../lib/auth/AuthContext';
 import Seo from '../lib/seo';
-import { ROLE_LABELS } from '../lib/auth/rbac';
 
-export default function Login() {
-  const { login, directory } = useAuth();
+export default function Login({ mode = 'sign-in' }) {
+  const { login, register, isPending } = useAuth();
   const nav = useNavigate();
   const toast = useToast();
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [err, setErr] = useState('');
   const user = useAuth().user;
 
-  if (user) return <Navigate to={user.role === 'MEMBER' ? '/dashboard' : '/dashboard'} replace />;
+  if (isPending) return <div className="grid min-h-screen place-items-center bg-ink text-sm text-white/60">Checking your secure session…</div>;
+  if (user) return <Navigate to="/dashboard" replace />;
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
-    const res = login(email);
-    if (!res.ok) { setErr(res.error); toast.error('Sign in failed', res.error); return; }
     setErr('');
-    toast.success(`Welcome, ${res.user.name}`, `Signed in as ${ROLE_LABELS[res.user.role]} — session secured server-side.`);
-    setTimeout(() => nav('/dashboard'), 450);
+    const result = mode === 'sign-up'
+      ? await register(fullName, email, password)
+      : await login(email, password);
+    if (!result.ok) {
+      setErr(result.error);
+      toast.error(mode === 'sign-up' ? 'Account creation failed' : 'Sign in failed', result.error);
+      return;
+    }
+    toast.success(mode === 'sign-up' ? 'Account created' : `Welcome, ${result.user?.name || 'back'}`, 'Your account is secured with a server-managed session.');
+    nav('/dashboard', { replace: true });
   };
 
   return (
@@ -47,16 +54,8 @@ export default function Login() {
             Empowering Members • Managing Loans • Building Communities. Sign in to your member or administration portal.
           </p>
           <div className="mt-8 hidden rounded-2xl glass p-5 lg:block">
-            <p className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-gold-300"><Sparkles size={14} /> Demo accounts (any password)</p>
-            <div className="grid grid-cols-2 gap-2">
-              {directory.map((d) => (
-                <button key={d.email} onClick={() => { setEmail(d.email); setPassword('oa-gims-demo'); }}
-                  className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left text-xs transition hover:border-gold-300/50 hover:bg-gold-300/10">
-                  <span className="block font-semibold text-white/90">{d.name}</span>
-                  <span className="text-[10px] text-gold-200/70">{ROLE_LABELS[d.role]}</span>
-                </button>
-              ))}
-            </div>
+            <p className="text-xs font-bold uppercase tracking-widest text-gold-300">Member access</p>
+            <p className="mt-2 text-sm text-white/60">New accounts receive the standard member role. Privileged roles are assigned by an authorized administrator.</p>
           </div>
         </motion.div>
 
@@ -65,24 +64,25 @@ export default function Login() {
             <div className="mb-6 flex items-center gap-3">
               <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-gold-300 to-aurum-deep text-ink"><LogIn size={22} /></span>
               <div>
-                <h2 className="font-display text-2xl font-bold">Secure sign in</h2>
-                <p className="text-xs text-white/50">Session-based auth • server-side RBAC • bcrypt hashing</p>
+                <h2 className="font-display text-2xl font-bold">{mode === 'sign-up' ? 'Create member account' : 'Secure sign in'}</h2>
+                <p className="text-xs text-white/50">Session-based authentication • server-verified roles</p>
               </div>
             </div>
 
             <div className="space-y-4">
+              {mode === 'sign-up' && <FloatInput label="Full name" name="name" autoComplete="name" required value={fullName} onChange={(event) => setFullName(event.target.value)} />}
               <FloatInput label="Work email" type="email" required autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} />
-              <FloatInput label="Password" type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+              <FloatInput label="Password" type="password" required minLength={8} autoComplete={mode === 'sign-up' ? 'new-password' : 'current-password'} value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
 
             {err && <p role="alert" className="mt-3 rounded-xl bg-red-500/10 px-3 py-2 text-xs text-red-300">{err}</p>}
 
-            <Button size="lg" className="mt-6 w-full">
-              Sign in <ArrowRight size={18} />
+            <Button size="lg" className="mt-6 w-full" disabled={isPending}>
+              {mode === 'sign-up' ? 'Create account' : 'Sign in'} <ArrowRight size={18} />
             </Button>
 
             <div className="mt-5 flex items-center justify-between text-xs text-white/50">
-              <span className="flex items-center gap-1.5"><ShieldCheck size={14} className="text-emerald-400" /> Roles are verified on the server</span>
+              <Link to={mode === 'sign-up' ? '/login' : '/sign-up'} className="text-gold-200 hover:underline">{mode === 'sign-up' ? 'Already registered? Sign in' : 'Create member account'}</Link>
               <Link to="/" className="text-gold-200 hover:underline">Back to home</Link>
             </div>
           </form>

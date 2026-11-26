@@ -1,16 +1,17 @@
+'use client';
+
 import React from 'react';
-import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom';
-import Landing from './pages/Landing';
-import Login from './pages/Login';
-import RoleDashboard from './pages/RoleDashboard';
+import Landing from './views/Landing';
+import Login from './views/Login';
+import RoleDashboard from './views/RoleDashboard';
 import Shell from './components/Shell';
 import { AuthProvider, useAuth } from './lib/auth/AuthContext';
 import { ToastProvider } from './components/ui/Toast';
-import './index.css';
 
 function ProtectedRoute() {
-  const { user } = useAuth();
+  const { user, isPending } = useAuth();
+  if (isPending) return <div className="grid min-h-screen place-items-center bg-ink text-sm text-white/60">Checking your secure session…</div>;
   return user ? <Outlet /> : <Navigate to="/login" replace />;
 }
 
@@ -47,6 +48,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/sign-up" element={<Login mode="sign-up" />} />
           <Route element={<ProtectedRoute />}>
             <Route element={<Shell />}>
               <Route path="/dashboard" element={<RoleDashboard />} />
@@ -71,10 +73,12 @@ function App() {
   );
 }
 
-createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
-  </React.StrictMode>,
-);
+export function Application() {
+  return (
+    <React.StrictMode>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </React.StrictMode>
+  );
+}

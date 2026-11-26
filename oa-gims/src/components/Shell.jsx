@@ -126,14 +126,14 @@ export default function Shell() {
                   <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gradient-to-br from-gold-300 to-aurum-deep font-bold text-ink" aria-hidden="true">{user.name.split(' ').map((s) => s[0]).slice(0, 2).join('')}</span>
                   <div className="min-w-0"><p className="truncate text-sm font-semibold">{user.name}</p><p className="truncate text-xs text-white/50">{user.email}</p><p className="mt-1 text-[10px] text-gold-200/70">{ROLE_LABELS[user.role]}</p></div>
                 </div>
-                <form onSubmit={(event) => { event.preventDefault(); const updated = updateProfile(profile); if (updated) { setProfile(updated); toast.success('Profile updated', 'Your account information has been updated for this session.'); event.currentTarget.closest('details')?.removeAttribute('open'); } }} className="space-y-3">
+                <form onSubmit={async (event) => { event.preventDefault(); const result = await updateProfile(profile); if (result.ok) { setProfile({ name: result.name, email: result.email }); toast.success('Profile updated', 'Your name has been saved to your account.'); event.currentTarget.closest('details')?.removeAttribute('open'); } else { toast.error('Profile not updated', result.error); } }} className="space-y-3">
                   <p className="text-xs font-semibold uppercase tracking-wider text-white/55">Update profile</p>
                   <FloatInput label="Full name" autoComplete="name" required value={profile.name} onChange={(event) => setProfile((current) => ({ ...current, name: event.target.value }))} />
-                  <FloatInput label="Email address" type="email" autoComplete="email" required value={profile.email} onChange={(event) => setProfile((current) => ({ ...current, email: event.target.value }))} />
+                  <FloatInput label="Email address" type="email" autoComplete="email" value={profile.email} readOnly />
                   <Button type="submit" className="w-full">Save profile</Button>
                 </form>
                 <div className="mt-4 border-t border-white/10 pt-3">
-                  <button onClick={() => { logout(); nav('/login'); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold text-red-300 transition hover:bg-red-500/10" aria-label="Sign out">
+                  <button onClick={async () => { await logout(); nav('/login', { replace: true }); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold text-red-300 transition hover:bg-red-500/10" aria-label="Sign out">
                     <LogOut size={15} /> Sign out
                   </button>
                 </div>
